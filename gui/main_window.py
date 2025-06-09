@@ -524,10 +524,11 @@ class MainWindow(QMainWindow):
 
 def check_dependencies():
     missing = []
-    if platform.system() == "Linux" and not shutil.which("ufw"):
-        missing.append("ufw")
-    if not shutil.which("python3"):
-        missing.append("python3")
+    if platform.system() == "Linux":
+        if not shutil.which("ufw"):  # Apenas avisa, mas não bloqueia
+            print("Aviso: ufw não encontrado. Funcionalidade de firewall pode estar limitada.")
+        if not shutil.which("python3"):
+            missing.append("python3")
     return missing
 
 if __name__ == "__main__":
