@@ -30,7 +30,16 @@ Instalação
 
 Baixe o Executável:
 
-Acesse Releases e baixe o ZIP correspondente ao seu sistema: Linux x64, Windows x64, macOS Intel ou macOS Apple Silicon. Extraia o arquivo e execute o aplicativo dentro da pasta extraída (`FoxterSecurity` no Linux/macOS, `FoxterSecurity.exe` no Windows ou `Foxter Security.app` no macOS). Python não precisa estar instalado.
+Os pacotes não ficam na branch `main` nem em uma pasta do código-fonte. Eles são publicados como **assets de uma GitHub Release**. Acesse a página [Releases do Foxter Security](https://github.com/devleandroid/foxter-security/releases) e, na versão mais recente, baixe o ZIP do seu sistema:
+
+- `FoxterSecurity-linux-x64.zip` — Linux 64 bits
+- `FoxterSecurity-windows-x64.zip` — Windows 64 bits
+- `FoxterSecurity-macos-x64.zip` — macOS com processador Intel
+- `FoxterSecurity-macos-arm64.zip` — macOS com Apple Silicon (M1/M2/M3/M4)
+
+Na página da release, os arquivos ficam na seção **Assets**. Extraia o ZIP e execute o aplicativo dentro da pasta extraída (`FoxterSecurity` no Linux, `FoxterSecurity.exe` no Windows ou `Foxter Security.app` no macOS). Python não precisa estar instalado.
+
+Para ver os builds temporários de uma execução manual do workflow, acesse a aba [Actions](https://github.com/devleandroid/foxter-security/actions), abra a execução concluída e baixe o artefato no final da página. Artefatos de Actions ficam disponíveis por 14 dias; para uma versão permanente, use uma Release.
 
 
 Permissões (Linux e macOS):
@@ -167,7 +176,14 @@ python -m pip install "pyinstaller>=6.14,<7"
 python -m PyInstaller --noconfirm --clean Antivirus.spec
 ```
 
-O resultado fica em `dist/FoxterSecurity` (ou `dist/Foxter Security.app` no macOS). O GitHub Actions também gera pacotes nativos para Linux x64, Windows x64, macOS Intel e Apple Silicon. Ao publicar uma tag `v*`, os ZIPs são anexados automaticamente à release. Os builds são feitos no sistema de destino: o PyInstaller não gera executáveis de Windows ou macOS a partir do Linux, nem vice-versa.
+O resultado fica em `dist/FoxterSecurity` (ou `dist/Foxter Security.app` no macOS). O GitHub Actions gera pacotes nativos para Linux x64, Windows x64, macOS Intel e Apple Silicon. Para publicar uma versão, crie e envie uma tag de versão:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Isso inicia o workflow **Build desktop apps**. Depois que os quatro builds e os testes terminarem, o workflow cria a GitHub Release dessa tag e anexa os ZIPs automaticamente. A release aparecerá em [Releases](https://github.com/devleandroid/foxter-security/releases), não na lista de arquivos da branch. Também é possível iniciar um build manual pela aba [Actions](https://github.com/devleandroid/foxter-security/actions) usando **Run workflow**; esse modo publica artefatos temporários, não uma release. Os builds são feitos no sistema de destino: o PyInstaller não gera executáveis de Windows ou macOS a partir do Linux, nem vice-versa.
 
 
 
