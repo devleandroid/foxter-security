@@ -1,3 +1,4 @@
+PyQt5>=5.15.11,<6
 psutil
 requests
-win10toast ; sys_platform == 'win32'
+pywin32>=306 ; sys_platform == 'win32'

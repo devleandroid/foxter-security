@@ -1,9 +1,19 @@
 import platform
 import subprocess
 import logging
-import pwd
 import os
 import time
+
+try:
+    import pwd
+except ImportError:
+    pwd = None
+
+try:
+    import win32net
+except ImportError:
+    win32net = None
+
 
 class UserChecker:
     def get_users(self):
@@ -12,6 +22,8 @@ class UserChecker:
         os_name = platform.system()
         try:
             if os_name == "Linux" or os_name == "Darwin":
+                if pwd is None:
+                    raise RuntimeError("O módulo pwd não está disponível neste sistema")
                 for entry in pwd.getpwall():
                     username = entry.pw_name
                     users.append(username)
@@ -25,6 +37,8 @@ class UserChecker:
                     except Exception as e:
                         logging.warning(f"Erro ao verificar {username}: {str(e)}")
             elif os_name == "Windows":
+                if win32net is None:
+                    raise RuntimeError("Instale pywin32 para listar usuários no Windows")
                 users = [user['name'] for user in win32net.NetUserEnum(None, 0)[0]]
                 for u in users:
                     try:

@@ -16,13 +16,35 @@ from core.process_checker import ProcessAnalyzer
 from core.file_scanner import FileScannerThread
 from infra.signature_db import MALICIOUS_SIGNATURES
 
-# Configuração de logging
-logging.basicConfig(filename="antivirus.log", level=logging.WARNING,
-                    format="%(asctime)s - %(levelname)s - %(message)s")
+def get_app_data_dir():
+    if platform.system() == "Windows":
+        base_dir = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+        return os.path.join(base_dir, "Foxter Security")
+    if platform.system() == "Darwin":
+        return os.path.join(os.path.expanduser("~"), "Library", "Application Support", "Foxter Security")
+    base_dir = os.environ.get("XDG_DATA_HOME", os.path.join(os.path.expanduser("~"), ".local", "share"))
+    return os.path.join(base_dir, "foxter-security")
 
-QUARANTINE_DIR = os.path.join(os.path.dirname(__file__), "quarantine")
-if not os.path.exists(QUARANTINE_DIR):
-    os.makedirs(QUARANTINE_DIR, exist_ok=True)
+
+def resource_path(relative_path):
+    bundle_dir = getattr(
+        sys,
+        "_MEIPASS",
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    )
+    return os.path.join(bundle_dir, relative_path)
+
+
+APP_DATA_DIR = get_app_data_dir()
+os.makedirs(APP_DATA_DIR, exist_ok=True)
+logging.basicConfig(
+    filename=os.path.join(APP_DATA_DIR, "antivirus.log"),
+    level=logging.WARNING,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+QUARANTINE_DIR = os.path.join(APP_DATA_DIR, "quarantine")
+os.makedirs(QUARANTINE_DIR, exist_ok=True)
 
 class NeonButton(QPushButton):
     def __init__(self, text, parent=None):
@@ -65,8 +87,9 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Foxter Security - Antivírus")
-        if os.path.exists("icon.png"):
-            self.setWindowIcon(QIcon("icon.png"))
+        icon_path = resource_path("fox.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         self.resize(900, 500)
         self.setStyleSheet("""
             QMainWindow {
@@ -179,15 +202,15 @@ class MainWindow(QMainWindow):
         controls_widget.setFixedWidth(250)
         controls_widget.setStyleSheet("background-color: #2C3E50; border-radius: 5px; padding: 5px;")
 
-        select_dir_btn = NeonButton("Selecionar Diretório")
-        select_dir_btn.setToolTip("Escolha um diretório")
-        select_dir_btn.clicked.connect(self.select_directory)
-        controls_layout.addWidget(select_dir_btn)
+        self.select_dir_button = NeonButton("Selecionar Diretório")
+        self.select_dir_button.setToolTip("Escolha um diretório")
+        self.select_dir_button.clicked.connect(self.select_directory)
+        controls_layout.addWidget(self.select_dir_button)
 
-        scan_btn = NeonButton("Iniciar Escaneamento")
-        scan_btn.setToolTip("Escanear arquivos")
-        scan_btn.clicked.connect(self.run_file_scan)
-        controls_layout.addWidget(scan_btn)
+        self.scan_button = NeonButton("Iniciar Escaneamento")
+        self.scan_button.setToolTip("Escanear arquivos")
+        self.scan_button.clicked.connect(self.run_file_scan)
+        controls_layout.addWidget(self.scan_button)
 
         self.scanner_status = StatusLabel("Aguardando escaneamento...")
         controls_layout.addWidget(self.scanner_status)
@@ -333,6 +356,9 @@ class MainWindow(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, "Selecionar Diretório", default_dir)
         if directory:
             self.file_scanner = FileScannerThread(directory=directory)
+            self.file_scanner.progress.connect(self.update_progress)
+            self.file_scanner.batch_scanned.connect(self.update_scan_result)
+            self.file_scanner.finished.connect(self.display_scan_results)
             self.scan_results_tree.clear()
             self.scanner_status.setText(f"Diretório selecionado: {directory}")
             logging.info(f"Diretório selecionado: {directory}")
@@ -341,15 +367,16 @@ class MainWindow(QMainWindow):
         if not self.file_scanner:
             self.scanner_status.setText("Erro: Selecione um diretório!")
             return
+        if self.file_scanner.isRunning():
+            return
         self.scan_results_tree.clear()
         self.scanner_status.setText("Escaneando...")
-        self.file_scanner.progress.connect(self.update_progress)
-        self.file_scanner.batch_scanned.connect(self.update_scan_result)
-        self.file_scanner.finished.connect(self.display_scan_results)
+        self.select_dir_button.setEnabled(False)
+        self.scan_button.setEnabled(False)
         self.file_scanner.start()
 
     def update_progress(self, value):
-        self.scanner_status.setText(f"Progresso: {value}%")
+        self.scanner_status.setText(f"Arquivos verificados: {value}")
 
     def update_scan_result(self, batch):
         for result in batch:
@@ -358,6 +385,8 @@ class MainWindow(QMainWindow):
         self.scan_results_tree.scrollToBottom()
 
     def display_scan_results(self, results):
+        self.select_dir_button.setEnabled(True)
+        self.scan_button.setEnabled(True)
         suspicious = [r for r in results if r["status"] == "Suspicious"]
         self.scanner_status.setText(f"Concluído: {len(suspicious)} ameaças encontradas.")
         item = QTreeWidgetItem([f"Total: {len(results)}", "", ""])

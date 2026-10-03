@@ -4,7 +4,7 @@ Este projeto foi criado para ser uma solução de segurança acessível e de có
 Visão Geral
 O Foxter Security possui cinco módulos principais, acessíveis através de uma barra de navegação na interface principal:
 
-Scanner de Arquivos: Detecta arquivos suspeitos com base em assinaturas conhecidas.
+Scanner de Arquivos: Detecta arquivos suspeitos por assinaturas de conteúdo e SHA-256. A varredura percorre o diretório uma vez e lê os arquivos em blocos para reduzir o uso de memória.
 Firewall: Verifica e corrige o status do firewall do sistema.
 Portas: Monitora portas abertas e permite fechá-las.
 Processos: Identifica processos suspeitos e permite encerrá-los.
@@ -14,18 +14,13 @@ A interface é projetada para ser intuitiva, com botões estilizados e feedback 
 Requisitos
 Para Usuários
 
-Linux: ufw instalado (sudo apt-get install ufw).
-Windows: Execute como administrador para funcionalidades que requerem privilégios.
-macOS: Execute com sudo para funcionalidades que requerem privilégios.
-Sistema operacional: Linux (distribuições baseadas em Debian/Ubuntu testadas), Windows 7 ou superior, macOS 10.14 ou superior.
+Linux: pacote x64; `ufw` é necessário apenas para a integração de firewall.
+Windows: pacote x64; algumas operações do sistema requerem privilégios de administrador.
+macOS: escolha o pacote Intel ou Apple Silicon de acordo com o processador; algumas operações do sistema requerem privilégios elevados.
 
 Para Desenvolvedores
 
-Python 3.7 ou superior.
-Dependências Python:pip install PyQt5 psutil pyinstaller
-
-
-No Windows, instale também:pip install pywin32
+Python 3.11 ou superior. Instale as dependências com `python -m pip install -r requirements.txt`. O PyInstaller é necessário apenas para gerar os pacotes.
 
 
 
@@ -35,32 +30,19 @@ Instalação
 
 Baixe o Executável:
 
-Acesse a seção de Releases e baixe o executável correspondente ao seu sistema operacional:
-Antivirus para Linux.
-Antivirus.exe para Windows.
-Antivirus.app ou Antivirus para macOS.
-
-
-Link direto para download: Baixar Foxter Security.
+Acesse Releases e baixe o ZIP correspondente ao seu sistema: Linux x64, Windows x64, macOS Intel ou macOS Apple Silicon. Extraia o arquivo e execute o aplicativo dentro da pasta extraída (`FoxterSecurity` no Linux/macOS, `FoxterSecurity.exe` no Windows ou `Foxter Security.app` no macOS). Python não precisa estar instalado.
 
 
 Permissões (Linux e macOS):
 
-No Linux, dê permissão de execução:chmod +x Antivirus
+No Linux, se necessário, dê permissão de execução: `chmod +x FoxterSecurity/FoxterSecurity`. Para funcionalidades que requerem privilégios, execute com sudo: `sudo ./FoxterSecurity/FoxterSecurity`.
 
 
-Para funcionalidades que requerem privilégios, execute com sudo:sudo ./Antivirus
-
-
-No macOS, se usar o executável diretamente:chmod +x Antivirus
-sudo ./Antivirus
-
-Ou abra o Antivirus.app normalmente.
-
+No macOS, abra `Foxter Security.app`. Se o Gatekeeper bloquear um pacote não assinado, autorize-o nas configurações de Segurança e Privacidade. A distribuição não é assinada nem notarizada.
 
 Windows:
 
-Execute o Antivirus.exe como administrador para garantir o funcionamento de todas as funcionalidades:runas /user:Administrator Antivirus.exe
+Execute `FoxterSecurity.exe`. Para operações do sistema que exigem privilégios, execute como administrador.
 
 
 
@@ -150,8 +132,7 @@ A remoção de usuários requer permissões elevadas.
 Imagem 6: Aba Usuários mostrando a lista de usuários e opções de remoção.
 Logs
 
-Todas as operações são registradas no arquivo antivirus.log no diretório onde o executável está localizado.
-Para verificar os logs:cat antivirus.log
+Os logs e os arquivos em quarentena são armazenados em uma pasta de dados do usuário: `%LOCALAPPDATA%/Foxter Security` no Windows, `~/Library/Application Support/Foxter Security` no macOS e `~/.local/share/foxter-security` no Linux (ou em `$XDG_DATA_HOME/foxter-security` quando definido).
 
 
 
@@ -175,23 +156,25 @@ No Windows:pip install pywin32
 
 
 
-Execute o Aplicativo:python gui/main_window.py
+Execute o Aplicativo: `python gui_main.py`
 
 
-Empacote o Executável:
-Use o Antivirus.spec fornecido:pyinstaller Antivirus.spec
+Empacote o aplicativo localmente (o build deve ser feito no sistema de destino):
 
+```sh
+python -m pip install -r requirements.txt
+python -m pip install "pyinstaller>=6.14,<7"
+python -m PyInstaller --noconfirm --clean Antivirus.spec
+```
 
-Ajuste o pathex no Antivirus.spec conforme seu sistema operacional.
+O resultado fica em `dist/FoxterSecurity` (ou `dist/Foxter Security.app` no macOS). O GitHub Actions também gera pacotes nativos para Linux x64, Windows x64, macOS Intel e Apple Silicon. Ao publicar uma tag `v*`, os ZIPs são anexados automaticamente à release. Os builds são feitos no sistema de destino: o PyInstaller não gera executáveis de Windows ou macOS a partir do Linux, nem vice-versa.
 
 
 
 Problemas Conhecidos
 
 Permissões: Algumas funcionalidades (ex.: fechar portas, remover usuários) requerem execução com privilégios elevados.
-Ícone: Certifique-se de que o arquivo icon.png está no diretório raiz para exibir o ícone do aplicativo.
-Tamanho do Executável: O executável pode ser grande; instale o UPX para reduzir o tamanho:sudo apt-get install upx-ucl  # Linux
-brew install upx  # macOS
+Tamanho do Aplicativo: O pacote inclui Python, Qt e as dependências para funcionar sem instalação. O formato em pasta inicializa mais rápido do que um executável único; o ZIP reduz o tamanho do download.
 
 
 
