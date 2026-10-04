@@ -64,6 +64,8 @@ class PortChecker:
         return results, open_count
 
     def close_port(self, port):
+        if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+            return False, "Invalid port number"
         os_name = platform.system()
         try:
             if os_name == "Linux":
@@ -72,15 +74,23 @@ class PortChecker:
                 return True, f"Port {port} closed"
             elif os_name == "Windows":
                 subprocess.check_call(
-                    f"netsh advfirewall firewall add rule name=\"Block_{port}\" dir=in action=block protocol=TCP localport={port}",
-                    shell=True
+                    [
+                        "netsh",
+                        "advfirewall",
+                        "firewall",
+                        "add",
+                        "rule",
+                        f"name=FoxterBlock_{port}",
+                        "dir=in",
+                        "action=block",
+                        "protocol=TCP",
+                        f"localport={port}",
+                    ]
                 )
                 logging.info(f"Porta {port} fechada via netsh")
                 return True, f"Port {port} closed"
             elif os_name == "Darwin":
-                subprocess.check_call(["sudo", "pfctl", "-t", "blockedports", "-T", "add", f"127.0.0.1/{port}"])
-                logging.info(f"Porta {port} fechada via pfctl")
-                return True, f"Port {port} closed"
+                return False, "O bloqueio de portas via pf ainda não está implementado com segurança"
             logging.warning(f"Sistema operacional não suportado para fechar porta: {os_name}")
             return False, "Unsupported OS"
         except subprocess.CalledProcessError as e:

@@ -2,7 +2,6 @@ import sys
 import os
 import logging
 import platform
-import shutil
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QStackedWidget,
     QFileDialog, QLabel, QSlider, QTreeWidget, QTreeWidgetItem, QFrame, QAction, QMessageBox, QApplication
@@ -14,6 +13,8 @@ from core.port_checker import PortChecker
 from core.user_checker import UserChecker
 from core.process_checker import ProcessAnalyzer
 from core.file_scanner import FileScannerThread
+from core.quarantine import quarantine_file
+from core.realtime_protection import RealTimeProtectionThread
 from infra.signature_db import MALICIOUS_SIGNATURES
 
 def get_app_data_dir():
@@ -36,7 +37,9 @@ def resource_path(relative_path):
 
 
 APP_DATA_DIR = get_app_data_dir()
-os.makedirs(APP_DATA_DIR, exist_ok=True)
+os.makedirs(APP_DATA_DIR, mode=0o700, exist_ok=True)
+if os.name != "nt":
+    os.chmod(APP_DATA_DIR, 0o700)
 logging.basicConfig(
     filename=os.path.join(APP_DATA_DIR, "antivirus.log"),
     level=logging.WARNING,
@@ -44,7 +47,9 @@ logging.basicConfig(
 )
 
 QUARANTINE_DIR = os.path.join(APP_DATA_DIR, "quarantine")
-os.makedirs(QUARANTINE_DIR, exist_ok=True)
+os.makedirs(QUARANTINE_DIR, mode=0o700, exist_ok=True)
+if os.name != "nt":
+    os.chmod(QUARANTINE_DIR, 0o700)
 
 class NeonButton(QPushButton):
     def __init__(self, text, parent=None):
@@ -129,6 +134,7 @@ class MainWindow(QMainWindow):
 
         # Inicialização
         self.file_scanner = None
+        self.realtime_protection = None
         self.firewall_checker = FirewallChecker()
         self.port_checker = PortChecker()
         self.user_checker = UserChecker()
@@ -214,6 +220,21 @@ class MainWindow(QMainWindow):
 
         self.scanner_status = StatusLabel("Aguardando escaneamento...")
         controls_layout.addWidget(self.scanner_status)
+
+        self.monitor_status = StatusLabel("Proteção em tempo real desativada.")
+        controls_layout.addWidget(self.monitor_status)
+
+        self.monitor_button = NeonButton("Ativar proteção em tempo real")
+        self.monitor_button.setToolTip(
+            "Monitorar esta pasta selecionada. A proteção é heurística e não bloqueia arquivos automaticamente."
+        )
+        self.monitor_button.clicked.connect(self.start_realtime_protection)
+        controls_layout.addWidget(self.monitor_button)
+
+        self.stop_monitor_button = NeonButton("Parar proteção em tempo real")
+        self.stop_monitor_button.setEnabled(False)
+        self.stop_monitor_button.clicked.connect(self.stop_realtime_protection)
+        controls_layout.addWidget(self.stop_monitor_button)
 
         save_report_btn = NeonButton("Salvar Relatório")
         save_report_btn.setToolTip("Salvar resultados")
@@ -352,7 +373,7 @@ class MainWindow(QMainWindow):
         self.users_layout.addWidget(self.users_tree)
 
     def select_directory(self):
-        default_dir = "/home" if platform.system() != "Windows" else "C:\\"
+        default_dir = os.path.expanduser("~")
         directory = QFileDialog.getExistingDirectory(self, "Selecionar Diretório", default_dir)
         if directory:
             self.file_scanner = FileScannerThread(directory=directory)
@@ -395,13 +416,70 @@ class MainWindow(QMainWindow):
         self.scan_results_tree.addTopLevelItem(item)
         logging.info(f"Escaneamento: {len(results)} total, {len(suspicious)} suspeitos")
 
+    def start_realtime_protection(self):
+        if not self.file_scanner:
+            self.monitor_status.setText("Selecione uma pasta antes de ativar o monitoramento.")
+            return
+        if self.realtime_protection and self.realtime_protection.isRunning():
+            return
+
+        directory = self.file_scanner.directory
+        self.realtime_protection = RealTimeProtectionThread(
+            directory,
+            ignored_paths=(QUARANTINE_DIR,),
+        )
+        self.realtime_protection.file_scanned.connect(self.display_monitored_file)
+        self.realtime_protection.warning.connect(self.show_protection_warning)
+        self.realtime_protection.status.connect(self.monitor_status.setText)
+        self.realtime_protection.stopped.connect(self.finish_realtime_protection)
+        self.select_dir_button.setEnabled(False)
+        self.monitor_button.setEnabled(False)
+        self.stop_monitor_button.setEnabled(True)
+        self.realtime_protection.start()
+
+    def stop_realtime_protection(self):
+        if self.realtime_protection and self.realtime_protection.isRunning():
+            self.stop_monitor_button.setEnabled(False)
+            self.monitor_status.setText("Parando a proteção em tempo real...")
+            self.realtime_protection.stop()
+
+    def finish_realtime_protection(self):
+        if self.monitor_status.text().startswith(
+            ("Monitoramento ativo:", "Parando a proteção em tempo real...")
+        ):
+            self.monitor_status.setText("Proteção em tempo real desativada.")
+        self.select_dir_button.setEnabled(True)
+        self.monitor_button.setEnabled(True)
+        self.stop_monitor_button.setEnabled(False)
+
+    def display_monitored_file(self, result):
+        item = QTreeWidgetItem([result["path"], result["status"], ""])
+        self.scan_results_tree.addTopLevelItem(item)
+        while self.scan_results_tree.topLevelItemCount() > 1000:
+            self.scan_results_tree.takeTopLevelItem(0)
+        self.monitor_status.setText(
+            f"Monitoramento: {result['status']} — {result['path']}"
+        )
+
+    def show_protection_warning(self, message):
+        self.monitor_status.setText(message)
+        QMessageBox.warning(self, "Alerta de proteção", message)
+
     def quarantine_file(self):
         item = self.scan_results_tree.currentItem()
         if item and item.text(1) == "Suspicious":
             path = item.text(0)
+            answer = QMessageBox.question(
+                self,
+                "Confirmar quarentena",
+                f"Mover este arquivo para a quarentena?\n\n{path}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
             try:
-                dest = os.path.join(QUARANTINE_DIR, os.path.basename(path))
-                shutil.move(path, dest)
+                quarantine_file(path, QUARANTINE_DIR)
                 item.setText(2, "Em quarentena")
                 self.scanner_status.setText(f"{path} movido para quarentena.")
                 logging.info(f"Quarentena: {path}")
@@ -413,6 +491,15 @@ class MainWindow(QMainWindow):
         item = self.scan_results_tree.currentItem()
         if item and item.text(1) == "Suspicious":
             path = item.text(0)
+            answer = QMessageBox.question(
+                self,
+                "Confirmar exclusão",
+                f"Excluir permanentemente este arquivo?\n\n{path}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
             try:
                 os.remove(path)
                 item.setText(2, "Excluído")
@@ -489,6 +576,15 @@ class MainWindow(QMainWindow):
         item = self.ports_tree.currentItem()
         if item and item.text(1) == "Open":
             port = int(item.text(0))
+            answer = QMessageBox.question(
+                self,
+                "Confirmar bloqueio",
+                f"Adicionar uma regra de bloqueio de entrada para a porta {port}?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
             try:
                 success, message = self.port_checker.close_port(port)
                 item.setText(3, message)
@@ -513,6 +609,15 @@ class MainWindow(QMainWindow):
         item = self.processes_tree.currentItem()
         if item:
             pid = int(item.text(0))
+            answer = QMessageBox.question(
+                self,
+                "Confirmar encerramento",
+                f"Tentar encerrar o processo {item.text(1)} (PID {pid})?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
             try:
                 self.process_analyzer.terminate_process(pid)
                 item.setText(3, "Encerrado")
@@ -536,6 +641,15 @@ class MainWindow(QMainWindow):
         item = self.users_tree.currentItem()
         if item and item.text(1) == "Unauthorized":
             username = item.text(0)
+            answer = QMessageBox.question(
+                self,
+                "Confirmar remoção de usuário",
+                f"Remover a conta {username} e, quando suportado, seus arquivos pessoais?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
             try:
                 self.user_checker.delete_user(username)
                 item.setText(2, "Removido")
@@ -550,6 +664,15 @@ class MainWindow(QMainWindow):
         self.real_time_check.setInterval(self.monitor_interval)
         self.processes_status.setText(f"Intervalo: {value} segundos")
         logging.info(f"Intervalo: {value} segundos")
+
+    def closeEvent(self, event):
+        if self.realtime_protection and self.realtime_protection.isRunning():
+            self.realtime_protection.stop()
+            self.realtime_protection.wait(3000)
+        if self.file_scanner and self.file_scanner.isRunning():
+            self.file_scanner.stop()
+            self.file_scanner.wait(3000)
+        super().closeEvent(event)
 
 def check_dependencies():
     missing = []

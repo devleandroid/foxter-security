@@ -1,10 +1,12 @@
 import hashlib
+import os
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.file_scanner import FileScannerThread
+from core.file_scanner import FileScannerThread, FileSignatureScanner
 
 
 class FileScannerTests(unittest.TestCase):
@@ -12,10 +14,8 @@ class FileScannerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             file_path = Path(directory) / "sample.bin"
             file_path.write_bytes(b"prefix vir" + b"us suffix")
-            scanner = FileScannerThread(directory)
-
-            with patch.object(FileScannerThread, "CHUNK_SIZE", 4):
-                self.assertEqual(scanner.scan_file(str(file_path)), "Suspicious")
+            scanner = FileSignatureScanner(chunk_size=4)
+            self.assertEqual(scanner.scan_file(str(file_path)), "Suspicious")
 
     def test_matches_sha256_signatures(self):
         content = b"known sample"
@@ -28,6 +28,47 @@ class FileScannerTests(unittest.TestCase):
 
             self.assertEqual(scanner.scan_file(str(file_path)), "Suspicious")
 
+    def test_stops_scanning_when_cancelled(self):
+        stop_event = threading.Event()
+        stop_event.set()
+
+        with tempfile.TemporaryDirectory() as directory:
+            file_path = Path(directory) / "sample.bin"
+            file_path.write_bytes(b"a" * 16)
+            scanner = FileSignatureScanner(signatures=[], chunk_size=4)
+
+            self.assertEqual(
+                scanner.scan_file(str(file_path), cancel_event=stop_event),
+                "Cancelled",
+            )
+
+    def test_rejects_symbolic_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "target.bin"
+            target.write_bytes(b"malware")
+            link = Path(directory) / "link.bin"
+            try:
+                link.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest("Symbolic links are unavailable")
+
+            status = FileSignatureScanner().scan_file(str(link))
+
+            self.assertTrue(status.startswith("Error:"))
+
+    def test_rejects_named_pipes_without_reading_them(self):
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("Named pipes are unavailable")
+
+        with tempfile.TemporaryDirectory() as directory:
+            pipe = Path(directory) / "pipe"
+            os.mkfifo(pipe)
+
+            self.assertEqual(
+                FileSignatureScanner(signatures=[]).scan_file(str(pipe)),
+                "Error: Not a regular file",
+            )
+
     def test_walks_directory_only_once(self):
         with tempfile.TemporaryDirectory() as directory:
             scanner = FileScannerThread(directory)
@@ -37,7 +78,10 @@ class FileScannerTests(unittest.TestCase):
                 with patch.object(scanner, "scan_file", return_value="Clean"):
                     scanner.run()
 
-            walk.assert_called_once_with(directory)
+            walk.assert_called_once_with(
+                directory,
+                onerror=FileScannerThread._log_walk_error,
+            )
             self.assertEqual(len(scanner.results), 2)
 
 

@@ -1,0 +1,34 @@
+import unittest
+from pathlib import Path
+
+from scripts.build_app import build_command
+
+
+class BuildAppTests(unittest.TestCase):
+    def test_uses_nuitka_standalone_compilation(self):
+        command = build_command(Path("/project"), "Linux")
+
+        self.assertIn("--mode=standalone", command)
+        self.assertIn("--python-flag=no_docstrings", command)
+        self.assertIn("--enable-plugin=pyqt5", command)
+        self.assertIn("--include-data-files=VERSION=VERSION", command)
+        self.assertNotIn("--onefile", command)
+        self.assertTrue(command[-1].endswith("gui_main.py"))
+
+    def test_windows_binary_uses_gui_subsystem(self):
+        command = build_command(Path("/project"), "Windows")
+
+        self.assertIn("--windows-console-mode=disable", command)
+        self.assertFalse(
+            any(argument.startswith("--windows-icon-from-ico=") for argument in command)
+        )
+
+    def test_macos_build_produces_named_app_bundle(self):
+        command = build_command(Path("/project"), "Darwin")
+
+        self.assertIn("--macos-create-app-bundle", command)
+        self.assertIn("--macos-app-name=Foxter Security", command)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -55,12 +55,21 @@ class UserChecker:
         return users, unauthorized
 
     def delete_user(self, username):
+        if (
+            not isinstance(username, str)
+            or not username
+            or username != username.strip()
+            or username.startswith(("-", "/"))
+            or any(character in username for character in ("/", "\\", "\0"))
+        ):
+            raise ValueError("Nome de usuário inválido")
+
         os_name = platform.system()
         try:
             if os_name == "Linux":
-                subprocess.check_call(["sudo", "userdel", "-r", username])
+                subprocess.check_call(["sudo", "userdel", "-r", "--", username])
             elif os_name == "Windows":
-                subprocess.check_call(f"net user {username} /delete", shell=True)
+                subprocess.check_call(["net", "user", username, "/delete"])
             elif os_name == "Darwin":
                 subprocess.check_call(["sudo", "sysadminctl", "-deleteUser", username])
             else:

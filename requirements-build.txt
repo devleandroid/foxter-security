@@ -1,0 +1,2 @@
+Nuitka>=2.7,<5
+zstandard>=0.23,<1

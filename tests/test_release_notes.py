@@ -14,8 +14,11 @@ class ReleaseNotesTests(unittest.TestCase):
                 self.assertIn(section, notes)
 
         self.assertIn("malware", notes)
-        self.assertIn("não substitui um antivírus com proteção em tempo real", notes)
+        self.assertIn("Monitoramento em tempo real", notes)
+        self.assertIn("alteração em massa", notes)
+        self.assertIn("não substitui uma suíte antivírus comercial", notes)
         self.assertIn("falsos positivos", notes)
+        self.assertIn("SHA256SUMS.txt", notes)
 
     def test_release_workflow_uses_notes_for_new_and_existing_releases(self):
         workflow = (PROJECT_ROOT / ".github" / "workflows" / "build.yml").read_text(
@@ -24,10 +27,19 @@ class ReleaseNotesTests(unittest.TestCase):
 
         self.assertIn('gh release edit "$TAG_NAME" --notes-file RELEASE_NOTES.md', workflow)
         self.assertIn(
-            'gh release create "$TAG_NAME" release-assets/*.zip --title "$TAG_NAME" '
+            'gh release create "$TAG_NAME" release-assets/*.zip '
+            'release-assets/SHA256SUMS.txt --title "$TAG_NAME" '
             "--notes-file RELEASE_NOTES.md",
             workflow,
         )
+        self.assertIn("sha256sum *.zip > SHA256SUMS.txt", workflow)
+        self.assertIn("Verify release version", workflow)
+
+    def test_version_file_matches_release_notes(self):
+        version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        notes = (PROJECT_ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
+        self.assertEqual(version, "1.0.3")
+        self.assertIn(f"**{version}**", notes)
 
 
 if __name__ == "__main__":

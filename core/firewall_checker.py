@@ -24,7 +24,10 @@ class FirewallChecker:
                 if "445" in result:
                     threats.append(("Port 445 open", self.threats["Port 445 open"]))
             elif os_name == "Windows":
-                result = subprocess.check_output("netsh advfirewall show allprofiles", shell=True, text=True)
+                result = subprocess.check_output(
+                    ["netsh", "advfirewall", "show", "allprofiles"],
+                    text=True,
+                )
                 active = "ON" in result.upper()
                 if not active:
                     threats.append(("No firewall active", self.threats["No firewall active"]))
@@ -56,7 +59,9 @@ class FirewallChecker:
                 subprocess.check_call(["sudo", "ufw", "enable"])
                 return True, "Firewall ativado com sucesso"
             elif os_name == "Windows":
-                subprocess.check_call("netsh advfirewall set allprofiles state on", shell=True)
+                subprocess.check_call(
+                    ["netsh", "advfirewall", "set", "allprofiles", "state", "on"]
+                )
                 return True, "Firewall ativado com sucesso (execute como administrador se falhar)"
             elif os_name == "Darwin":
                 subprocess.check_call(["sudo", "pfctl", "-E"])

@@ -1,13 +1,27 @@
 import platform
 import subprocess
-import os
 import logging
+
+
+def _escape_applescript_string(value):
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
+    )
+
 
 def notify(title, message):
     os_name = platform.system()
     try:
         if os_name == "Darwin":
-            os.system(f'''osascript -e 'display notification "{message}" with title "{title}"' ''')
+            script = (
+                f'display notification "{_escape_applescript_string(message)}" '
+                f'with title "{_escape_applescript_string(title)}"'
+            )
+            subprocess.run(["osascript", "-e", script], check=True)
         elif os_name == "Linux":
             subprocess.call(["notify-send", title, message])
         elif os_name == "Windows":

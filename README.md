@@ -4,7 +4,7 @@ Este projeto foi criado para ser uma solução de segurança acessível e de có
 Visão Geral
 O Foxter Security possui cinco módulos principais, acessíveis através de uma barra de navegação na interface principal:
 
-Scanner de Arquivos: Detecta arquivos suspeitos por assinaturas de conteúdo e SHA-256. A varredura percorre o diretório uma vez e lê os arquivos em blocos para reduzir o uso de memória.
+Scanner e monitoramento: verifica arquivos por assinaturas locais e SHA-256, com leitura em blocos. Permite escanear uma pasta manualmente ou monitorar uma pasta selecionada enquanto o aplicativo estiver aberto; alterações em massa e extensões comuns de ransomware geram alertas heurísticos.
 Firewall: Verifica e corrige o status do firewall do sistema.
 Portas: Monitora portas abertas e permite fechá-las.
 Processos: Identifica processos suspeitos e permite encerrá-los.
@@ -20,7 +20,7 @@ macOS: escolha o pacote Intel ou Apple Silicon de acordo com o processador; algu
 
 Para Desenvolvedores
 
-Python 3.11 ou superior. Instale as dependências com `python -m pip install -r requirements.txt`. O PyInstaller é necessário apenas para gerar os pacotes.
+Python 3.11 ou superior. Instale as dependências do aplicativo com `python -m pip install -r requirements.txt`. Para compilar os binários, instale também `python -m pip install -r requirements-build.txt` e um compilador C compatível com seu sistema.
 
 
 
@@ -63,13 +63,14 @@ Ao abrir o Foxter Security, você verá a interface principal com uma barra de n
 Imagem 1: Interface principal do Foxter Security com tema escuro futurista.
 1. Scanner de Arquivos
 
-Função: Escaneia diretórios em busca de arquivos suspeitos com base em assinaturas.
+Função: Escaneia diretórios sob demanda ou monitora uma pasta selecionada para verificar arquivos novos e alterados e alertar sobre comportamentos que podem indicar ransomware.
 Como Usar:
 Clique em "Selecionar Diretório" para escolher uma pasta.
 Clique em "Iniciar Escaneamento" para começar a análise.
+Para monitoramento contínuo, clique em "Ativar proteção em tempo real"; ele permanece ativo enquanto o aplicativo estiver aberto. Use "Parar proteção em tempo real" para interromper.
 Os resultados aparecem na tabela à direita:
 Arquivo: Caminho do arquivo.
-Status: "Suspicious" (suspeito) ou "Safe" (seguro).
+Status: "Suspicious" (suspeito), "Clean" (não corresponde às assinaturas locais) ou um erro de leitura.
 Ação: Clique com o botão direito para "Mover para Quarentena" ou "Excluir".
 
 
@@ -143,11 +144,17 @@ Logs
 
 Os logs e os arquivos em quarentena são armazenados em uma pasta de dados do usuário: `%LOCALAPPDATA%/Foxter Security` no Windows, `~/Library/Application Support/Foxter Security` no macOS e `~/.local/share/foxter-security` no Linux (ou em `$XDG_DATA_HOME/foxter-security` quando definido).
 
+Limitações de proteção: o monitoramento cobre somente a pasta selecionada e apenas enquanto o aplicativo está aberto. Os alertas comportamentais não interrompem processos nem impedem criptografia. A base local atual contém apenas as palavras `malware`, `virus` e `trojan` e hashes configurados pelo projeto; não há reputação na nuvem nem atualização automática. O programa é experimental, pode gerar falsos positivos e não substitui uma suíte antivírus comercial.
+
+Segurança do executável: as releases são compiladas com Nuitka para dificultar a extração do bytecode Python. Isso aumenta o esforço de engenharia reversa, mas não a torna impossível; não armazene segredos no binário.
+
+Versão: cada melhoria preparada para distribuição deve atualizar `VERSION` e `RELEASE_NOTES.md`. O workflow valida que a tag da release (por exemplo, `v1.0.3`) corresponde ao valor de `VERSION`.
+
 
 
 Contribuindo
 
-Clone o Repositório:git clone https://github.com/seu-usuario/foxter-security.git
+Clone o Repositório: `git clone https://github.com/devleandroid/foxter-security.git`
 cd foxter-security
 
 
@@ -155,10 +162,7 @@ Configure o Ambiente:
 Crie um ambiente virtual e instale dependências:python3 -m venv venv
 source venv/bin/activate  # Linux/macOS
 venv\Scripts\activate     # Windows
-pip install PyQt5 psutil pyinstaller
-
-
-No Windows:pip install pywin32
+python -m pip install -r requirements.txt -r requirements-build.txt
 
 
 
@@ -171,26 +175,27 @@ Execute o Aplicativo: `python gui_main.py`
 Empacote o aplicativo localmente (o build deve ser feito no sistema de destino):
 
 ```sh
-python -m pip install -r requirements.txt
-python -m pip install "pyinstaller>=6.14,<7"
-python -m PyInstaller --noconfirm --clean Antivirus.spec
+python -m pip install -r requirements.txt -r requirements-build.txt
+python scripts/build_app.py
+python scripts/package_app.py
 ```
 
-O resultado fica em `dist/FoxterSecurity` (ou `dist/Foxter Security.app` no macOS). O GitHub Actions gera pacotes nativos para Linux x64, Windows x64, macOS Intel e Apple Silicon. Para publicar uma versão, crie e envie uma tag de versão:
+O Nuitka compila o código Python em binários nativos no modo standalone e remove docstrings do executável para dificultar a inspeção direta; o resultado fica em `dist/FoxterSecurity.dist` (ou `dist/Foxter Security.app` no macOS). Isso não impede engenharia reversa. O script identifica automaticamente a plataforma local. Se necessário, defina `BUILD_TARGET` como `linux-x64`, `windows-x64`, `macos-x64` ou `macos-arm64` antes de executar `scripts/package_app.py`. O GitHub Actions gera pacotes nativos para as quatro plataformas. Antes de publicar uma melhoria, atualize `VERSION` e `RELEASE_NOTES.md`. Para publicar, crie e envie uma tag igual a `v` mais o valor de `VERSION`:
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
-Isso inicia o workflow **Build desktop apps**. Depois que os quatro builds e os testes terminarem, o workflow cria a GitHub Release dessa tag e anexa os ZIPs automaticamente. A release aparecerá em [Releases](https://github.com/devleandroid/foxter-security/releases), não na lista de arquivos da branch. Também é possível iniciar um build manual pela aba [Actions](https://github.com/devleandroid/foxter-security/actions) usando **Run workflow**; esse modo publica artefatos temporários, não uma release. Os builds são feitos no sistema de destino: o PyInstaller não gera executáveis de Windows ou macOS a partir do Linux, nem vice-versa.
+Isso inicia o workflow **Build desktop apps**. Ele executa testes, auditoria de dependências e análise estática antes dos builds; também roda em pull requests e alterações nas branches principais. Depois que os quatro builds terminarem, o workflow cria a GitHub Release dessa tag e anexa os ZIPs e `SHA256SUMS.txt`. Os hashes detectam corrupção/alteração dos arquivos, mas não autenticam o publicador. A release aparecerá em [Releases](https://github.com/devleandroid/foxter-security/releases), não na lista de arquivos da branch. Também é possível iniciar um build manual pela aba [Actions](https://github.com/devleandroid/foxter-security/actions) usando **Run workflow**; esse modo publica artefatos temporários, não uma release. Os builds são feitos no sistema de destino: o Nuitka não gera executáveis de Windows ou macOS a partir do Linux, nem vice-versa.
 
 
 
 Problemas Conhecidos
 
 Permissões: Algumas funcionalidades (ex.: fechar portas, remover usuários) requerem execução com privilégios elevados.
-Tamanho do Aplicativo: O pacote inclui Python, Qt e as dependências para funcionar sem instalação. O formato em pasta inicializa mais rápido do que um executável único; o ZIP reduz o tamanho do download.
+Segurança do binário: Nuitka compila o código em binários nativos em vez de distribuir bytecode Python fácil de extrair, o que aumenta o esforço de engenharia reversa. Isso não torna a engenharia reversa impossível; dados usados pelo programa ainda podem ser observados em execução. Não coloque chaves privadas, senhas ou segredos no código ou no pacote. Os pacotes ainda não têm assinatura digital de editor; no macOS, também não são notarizados.
+Tamanho do Aplicativo: O pacote inclui Python, Qt e as dependências para funcionar sem instalação. O formato em pasta inicia mais rápido do que um executável único; o ZIP reduz o tamanho do download.
 
 
 

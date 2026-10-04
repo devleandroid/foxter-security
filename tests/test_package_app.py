@@ -14,8 +14,16 @@ class PackageAppTests(unittest.TestCase):
     def test_packages_build_output_for_current_platform(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             workspace = Path(temporary_directory)
-            bundle_name = "Foxter Security.app" if sys.platform == "darwin" else "FoxterSecurity"
-            executable = workspace / "dist" / bundle_name / "app" / "FoxterSecurity"
+            if sys.platform == "darwin":
+                bundle_name = "Foxter Security.app"
+                bundle_dir = workspace / "dist" / bundle_name
+            else:
+                bundle_name = "FoxterSecurity"
+                bundle_dir = workspace / "dist" / "FoxterSecurity.dist"
+            executable_name = (
+                "FoxterSecurity.exe" if sys.platform == "win32" else "FoxterSecurity"
+            )
+            executable = bundle_dir / "app" / executable_name
             executable.parent.mkdir(parents=True)
             executable.write_text("standalone application")
 
@@ -33,7 +41,7 @@ class PackageAppTests(unittest.TestCase):
             archive_path = workspace / "dist" / "FoxterSecurity-test-target.zip"
             with zipfile.ZipFile(archive_path) as archive:
                 self.assertEqual(
-                    archive.read(f"{bundle_name}/app/FoxterSecurity"),
+                    archive.read(f"{bundle_name}/app/{executable_name}"),
                     b"standalone application",
                 )
 
