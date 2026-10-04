@@ -1,5 +1,5 @@
 PyQt5>=5.15.11,<6
 psutil
 requests
-watchdog>=4.0,<7
+watchdog>=6.0.0,<7
 pywin32>=306 ; sys_platform == 'win32'
