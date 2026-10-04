@@ -6,6 +6,17 @@ import zipfile
 from pathlib import Path
 
 
+def find_build_output(dist_dir, system):
+    pattern = "*.app" if system == "Darwin" else "*.dist"
+    candidates = sorted(path for path in dist_dir.glob(pattern) if path.is_dir())
+    if len(candidates) != 1:
+        raise FileNotFoundError(
+            f"Expected one Nuitka build output matching {pattern} in {dist_dir}, "
+            f"found {len(candidates)}"
+        )
+    return candidates[0]
+
+
 def main():
     target = os.environ.get("BUILD_TARGET")
     if not target:
@@ -24,19 +35,14 @@ def main():
                 f"Unsupported build target: {system} {machine}; set BUILD_TARGET explicitly"
             )
     dist_dir = Path("dist")
-    if platform.system() == "Darwin":
-        bundle_name = "Foxter Security.app"
-        bundle = dist_dir / bundle_name
-    else:
-        bundle_name = "FoxterSecurity"
-        bundle = dist_dir / "FoxterSecurity.dist"
-    if not bundle.exists():
-        raise FileNotFoundError(f"Build output not found: {bundle}")
+    system = platform.system()
+    bundle = find_build_output(dist_dir, system)
+    archive_bundle_name = "Foxter Security.app" if system == "Darwin" else "FoxterSecurity"
 
     archive_path = dist_dir / f"FoxterSecurity-{target}.zip"
     with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for path in bundle.rglob("*"):
-            archive_path_in_zip = Path(bundle_name) / path.relative_to(bundle)
+            archive_path_in_zip = Path(archive_bundle_name) / path.relative_to(bundle)
             if path.is_symlink():
                 info = zipfile.ZipInfo(archive_path_in_zip.as_posix())
                 info.create_system = 3

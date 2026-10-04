@@ -1,4 +1,6 @@
-Versão desta melhoria: **1.0.4**.
+Versão desta melhoria: **1.0.5**.
+
+Esta versão corrige a compilação e o empacotamento de saída do Nuitka no Windows, Linux e macOS; cada build usa a versão do arquivo `VERSION`.
 
 ## O que é o Foxter Security
 

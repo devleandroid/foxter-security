@@ -6,11 +6,13 @@ from pathlib import Path
 
 def build_command(project_root, system=None):
     system = platform.system() if system is None else system
+    version = (project_root / "VERSION").read_text(encoding="utf-8").strip()
+    mode = "app" if system == "Darwin" else "standalone"
     command = [
         sys.executable,
         "-m",
         "nuitka",
-        "--mode=standalone",
+        f"--mode={mode}",
         "--python-flag=no_docstrings",
         "--enable-plugin=pyqt5",
         "--include-data-files=fox.png=fox.png",
@@ -20,12 +22,11 @@ def build_command(project_root, system=None):
         "--product-name=Foxter Security",
     ]
     if system == "Windows":
-        command.append("--windows-console-mode=disable")
-    elif system == "Darwin":
         command.extend(
             [
-                "--macos-create-app-bundle",
-                "--macos-app-name=Foxter Security",
+                f"--product-version={version}",
+                f"--file-version={version}",
+                "--windows-console-mode=disable",
             ]
         )
     command.append(str(project_root / "gui_main.py"))
