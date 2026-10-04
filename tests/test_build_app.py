@@ -23,6 +23,7 @@ class BuildAppTests(unittest.TestCase):
         version = (self.project_root / "VERSION").read_text(encoding="utf-8").strip()
 
         self.assertIn("--windows-console-mode=disable", command)
+        self.assertIn("--assume-yes-for-downloads", command)
         self.assertIn(f"--product-version={version}", command)
         self.assertIn(f"--file-version={version}", command)
         self.assertFalse(

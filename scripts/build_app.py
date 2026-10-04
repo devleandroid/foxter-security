@@ -27,6 +27,7 @@ def build_command(project_root, system=None):
                 f"--product-version={version}",
                 f"--file-version={version}",
                 "--windows-console-mode=disable",
+                "--assume-yes-for-downloads",
             ]
         )
     command.append(str(project_root / "gui_main.py"))

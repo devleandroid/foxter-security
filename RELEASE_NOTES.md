@@ -1,6 +1,6 @@
-Versão desta melhoria: **1.0.5**.
+Versão desta melhoria: **1.0.6**.
 
-Esta versão corrige a compilação e o empacotamento de saída do Nuitka no Windows, Linux e macOS; cada build usa a versão do arquivo `VERSION`.
+Esta versão corrige a compilação e o empacotamento de saída do Nuitka no Windows, Linux e macOS. No Windows, a pipeline permite que o Nuitka baixe automaticamente o Dependency Walker necessário em runners não interativos. Cada build usa a versão do arquivo `VERSION`.
 
 ## O que é o Foxter Security
 
