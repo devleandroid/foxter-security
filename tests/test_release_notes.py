@@ -38,8 +38,23 @@ class ReleaseNotesTests(unittest.TestCase):
     def test_version_file_matches_release_notes(self):
         version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
         notes = (PROJECT_ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8")
-        self.assertEqual(version, "1.0.3")
+        readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertEqual(version, "1.0.4")
         self.assertIn(f"**{version}**", notes)
+        self.assertIn(f"`v{version}`", readme)
+
+    def test_donation_copy_is_in_readme_and_release_notes(self):
+        expected = (
+            "Ajude a fortalecer o Foxter Security",
+            "contribuição voluntária",
+            "803.185.680-04",
+            "decidir com confiança.",
+        )
+        for filename in ("README.md", "RELEASE_NOTES.md"):
+            content = (PROJECT_ROOT / filename).read_text(encoding="utf-8")
+            for phrase in expected:
+                with self.subTest(file=filename, phrase=phrase):
+                    self.assertIn(phrase, content)
 
 
 if __name__ == "__main__":

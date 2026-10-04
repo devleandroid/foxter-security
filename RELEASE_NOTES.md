@@ -1,4 +1,4 @@
-Versão desta melhoria: **1.0.3**.
+Versão desta melhoria: **1.0.4**.
 
 ## O que é o Foxter Security
 
@@ -32,3 +32,15 @@ Logs e arquivos em quarentena ficam na pasta de dados do usuário: `%LOCALAPPDAT
 ## Limitações importantes
 
 Este projeto é uma ferramenta experimental e não substitui uma suíte antivírus comercial. O scanner examina apenas a pasta escolhida, procurando as assinaturas locais definidas pelo projeto (atualmente as palavras `malware`, `virus` e `trojan`) e hashes SHA-256 adicionados à base. O monitoramento em tempo real também cobre somente a pasta escolhida e só funciona enquanto o programa estiver aberto. Nenhum conteúdo ou hash é enviado a terceiros; não há consulta de reputação na nuvem nem atualização automática das assinaturas. A detecção comportamental de ransomware é heurística, não impede criptografia e pode produzir falsos positivos durante operações legítimas com muitos arquivos. Outros painéis também usam heurísticas simples; confira os resultados antes de bloquear, encerrar ou remover qualquer coisa.
+
+## Apoie o projeto
+
+### Ajude a fortalecer o Foxter Security
+
+Segurança digital melhor se constrói com dedicação, transparência e apoio da comunidade. Se este projeto é útil para você, sua contribuição voluntária ajuda a manter e aprimorar o Foxter Security: financiar desenvolvimento, testes e correções de segurança, compatibilidade com Linux, Windows e macOS, e a infraestrutura necessária para compilar e publicar novas versões.
+
+Qualquer valor faz diferença — e contribuir não é obrigatório. O Foxter Security ainda é experimental: a doação apoia o desenvolvimento, mas não compra um serviço nem substitui um antivírus profissional.
+
+**Pix (CPF):** `803.185.680-04`
+
+O Foxter Security está em desenvolvimento contínuo. As contribuições ajudam a manter o projeto ativo e acelerar testes, correções e melhorias. Publicamos atualizações e explicamos com transparência o que cada versão oferece, para que você possa acompanhar a evolução do projeto e decidir com confiança.

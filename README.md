@@ -148,7 +148,19 @@ Limitações de proteção: o monitoramento cobre somente a pasta selecionada e 
 
 Segurança do executável: as releases são compiladas com Nuitka para dificultar a extração do bytecode Python. Isso aumenta o esforço de engenharia reversa, mas não a torna impossível; não armazene segredos no binário.
 
-Versão: cada melhoria preparada para distribuição deve atualizar `VERSION` e `RELEASE_NOTES.md`. O workflow valida que a tag da release (por exemplo, `v1.0.3`) corresponde ao valor de `VERSION`.
+Versão: cada melhoria preparada para distribuição deve atualizar `VERSION` e `RELEASE_NOTES.md`. O workflow valida que a tag da release (por exemplo, `v1.0.4`) corresponde ao valor de `VERSION`.
+
+## Apoie o projeto
+
+### Ajude a fortalecer o Foxter Security
+
+Segurança digital melhor se constrói com dedicação, transparência e apoio da comunidade. Se este projeto é útil para você, sua contribuição voluntária ajuda a manter e aprimorar o Foxter Security: financiar desenvolvimento, testes e correções de segurança, compatibilidade com Linux, Windows e macOS, e a infraestrutura necessária para compilar e publicar novas versões.
+
+Qualquer valor faz diferença — e contribuir não é obrigatório. O Foxter Security ainda é experimental: a doação apoia o desenvolvimento, mas não compra um serviço nem substitui um antivírus profissional.
+
+**Pix (CPF):** `803.185.680-04`
+
+O Foxter Security está em desenvolvimento contínuo. As contribuições ajudam a manter o projeto ativo e acelerar testes, correções e melhorias. Publicamos atualizações e explicamos com transparência o que cada versão oferece, para que você possa acompanhar a evolução do projeto e decidir com confiança.
 
 
 
@@ -183,8 +195,8 @@ python scripts/package_app.py
 O Nuitka compila o código Python em binários nativos no modo standalone e remove docstrings do executável para dificultar a inspeção direta; o resultado fica em `dist/FoxterSecurity.dist` (ou `dist/Foxter Security.app` no macOS). Isso não impede engenharia reversa. O script identifica automaticamente a plataforma local. Se necessário, defina `BUILD_TARGET` como `linux-x64`, `windows-x64`, `macos-x64` ou `macos-arm64` antes de executar `scripts/package_app.py`. O GitHub Actions gera pacotes nativos para as quatro plataformas. Antes de publicar uma melhoria, atualize `VERSION` e `RELEASE_NOTES.md`. Para publicar, crie e envie uma tag igual a `v` mais o valor de `VERSION`:
 
 ```sh
-git tag v1.0.3
-git push origin v1.0.3
+git tag v1.0.4
+git push origin v1.0.4
 ```
 
 Isso inicia o workflow **Build desktop apps**. Ele executa testes, auditoria de dependências e análise estática antes dos builds; também roda em pull requests e alterações nas branches principais. Depois que os quatro builds terminarem, o workflow cria a GitHub Release dessa tag e anexa os ZIPs e `SHA256SUMS.txt`. Os hashes detectam corrupção/alteração dos arquivos, mas não autenticam o publicador. A release aparecerá em [Releases](https://github.com/devleandroid/foxter-security/releases), não na lista de arquivos da branch. Também é possível iniciar um build manual pela aba [Actions](https://github.com/devleandroid/foxter-security/actions) usando **Run workflow**; esse modo publica artefatos temporários, não uma release. Os builds são feitos no sistema de destino: o Nuitka não gera executáveis de Windows ou macOS a partir do Linux, nem vice-versa.
