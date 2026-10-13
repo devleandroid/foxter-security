@@ -19,6 +19,14 @@ MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
 CHORD_NAMES = ["C", "Dm", "Em", "F", "G", "Am", "Bdim"]
 
 
+def _print_console(message, stream=None):
+    stream = sys.stdout if stream is None else stream
+    encoding = getattr(stream, "encoding", None)
+    if encoding:
+        message = message.encode(encoding, errors="replace").decode(encoding)
+    print(message, file=stream)
+
+
 class GitSymphony:
     def __init__(self, repo_path=".", tempo=120):
         self.repo_path = repo_path
@@ -141,14 +149,16 @@ class GitSymphony:
         channel = 0
         midi.addTempo(track, 0, self.tempo)
 
-        print(f"🎵 Gerando sinfonia com {len(commits)} commits...\n")
+        _print_console(f"🎵 Gerando sinfonia com {len(commits)} commits...\n")
 
         prev_date = None
         events = []
         current_time = 0
 
-        print(f"{'#':<4} {'Cifra':<6} {'Vel':<5} {'Dur':<5} {'Mensagem do Commit'}")
-        print("-" * 70)
+        _print_console(
+            f"{'#':<4} {'Cifra':<6} {'Vel':<5} {'Dur':<5} {'Mensagem do Commit'}"
+        )
+        _print_console("-" * 70)
 
         for i, commit in enumerate(commits, 1):
             chord, notes = self.commit_to_chord(commit['hash'])
@@ -160,7 +170,7 @@ class GitSymphony:
 
             msg = commit['message'][:45]
 
-            print(f"{i:<4} {chord:<6} {velocity:<5} {duration:<5.1f} {msg}")
+            _print_console(f"{i:<4} {chord:<6} {velocity:<5} {duration:<5.1f} {msg}")
             events.append({
                 **commit,
                 "chord": chord,
@@ -177,14 +187,14 @@ class GitSymphony:
             midi.writeFile(output_file_handle)
 
         self.events = events
-        print("\n" + "=" * 70)
-        print(f"✅ Sinfonia gerada: {output_file}")
-        print(f"📊 Total de acordes: {len(commits)}")
-        print(
+        _print_console("\n" + "=" * 70)
+        _print_console(f"✅ Sinfonia gerada: {output_file}")
+        _print_console(f"📊 Total de acordes: {len(commits)}")
+        _print_console(
             f"⏱️  Duração total: {current_time:.1f} beats "
             f"({current_time / self.tempo * 60:.1f} segundos)"
         )
-        print("=" * 70)
+        _print_console("=" * 70)
 
         return output_file
 
@@ -218,10 +228,10 @@ def main(argv=None):
                 symphony.tempo,
                 midi_path,
             )
-            print(f"🌐 Player interativo: {html_path}")
-            print(f"🎹 Partitura SVG: {svg_path}")
+            _print_console(f"🌐 Player interativo: {html_path}")
+            _print_console(f"🎹 Partitura SVG: {svg_path}")
     except (OSError, RuntimeError, ValueError) as error:
-        print(f"Erro: {error}", file=sys.stderr)
+        _print_console(f"Erro: {error}", stream=sys.stderr)
         return 1
     return 0
 

@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+from contextlib import redirect_stdout
 from pathlib import Path
 
 from git_symphony import GitSymphony
@@ -51,7 +52,8 @@ class GitSymphonyTests(unittest.TestCase):
             html_file = output / "index.html"
             svg_file = output / "symphony.svg"
             symphony = GitSymphony(repo_path=str(repo))
-            symphony.generate_symphony(str(midi_file))
+            with redirect_stdout(_WindowsConsoleStream()):
+                symphony.generate_symphony(str(midi_file))
             write_site(
                 symphony.events,
                 html_file,
@@ -123,6 +125,17 @@ class GitSymphonyTests(unittest.TestCase):
             text=True,
             env=command_env,
         )
+
+
+class _WindowsConsoleStream:
+    encoding = "cp1252"
+
+    def write(self, text):
+        text.encode(self.encoding)
+        return len(text)
+
+    def flush(self):
+        pass
 
 
 if __name__ == "__main__":
