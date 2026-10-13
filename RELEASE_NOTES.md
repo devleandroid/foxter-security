@@ -1,6 +1,10 @@
-Versão desta melhoria: **1.0.6**.
+Versão desta melhoria: **1.0.7**.
 
-Esta versão corrige a compilação e o empacotamento de saída do Nuitka no Windows, Linux e macOS. No Windows, a pipeline permite que o Nuitka baixe automaticamente o Dependency Walker necessário em runners não interativos. Cada build usa a versão do arquivo `VERSION`.
+Esta versão adiciona a **Git Symphony**, que transforma o histórico do repositório em uma composição musical. Cada commit vira um acorde baseado em seu hash e mensagem; a partitura mostra as cifras e o piano, e o player permite ouvir a música com **Play** ou baixar o MIDI.
+
+Ao publicar uma tag de release `v*`, o GitHub Actions gera a página interativa e a publica no GitHub Pages. A partitura clicável também aparece no README. A reprodução começa somente após a interação do usuário; nenhum áudio toca automaticamente. O gerador inclui até 50 commits recentes do histórico, em ordem cronológica.
+
+Esta versão também inclui correções na sintaxe YAML do workflow, testes para a geração do MIDI, da partitura e do player, e a dependência da Git Symphony separada das dependências do aplicativo desktop. Ela inclui ainda a compilação e o empacotamento de saída do Nuitka no Windows, Linux e macOS, com o download automático do Dependency Walker em runners não interativos do Windows. Cada build usa a versão do arquivo `VERSION`.
 
 ## O que é o Foxter Security
 
