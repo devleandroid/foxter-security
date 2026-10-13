@@ -162,7 +162,8 @@ jobs:
       - name: Report player URL
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: echo "Git Symphony player: ${PAGE_URL}" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Git Symphony player: ${PAGE_URL}" >> "$GITHUB_STEP_SUMMARY"
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
