@@ -33,7 +33,7 @@ class GitSymphony:
         self.tempo = tempo
         self.events = []
 
-    def get_git_commits(self, max_commits=50):
+    def get_git_commits(self):
         """Obtém commits do repositório git"""
         try:
             result = subprocess.run(
@@ -42,7 +42,6 @@ class GitSymphony:
                     "log",
                     "--reverse",
                     "--pretty=format:%H%x1f%an%x1f%ai%x1f%s",
-                    f"-n{max_commits}",
                 ],
                 cwd=self.repo_path,
                 capture_output=True,

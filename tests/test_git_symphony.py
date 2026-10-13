@@ -100,6 +100,26 @@ class GitSymphonyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "histórico Git"):
                 GitSymphony(repo_path=temp_dir).get_git_commits()
 
+    def test_reads_all_commits_in_chronological_order(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir) / "repo"
+            repo.mkdir()
+            self._run_git(repo, "init", "-q")
+            self._run_git(repo, "config", "user.name", "Test Author")
+            self._run_git(repo, "config", "user.email", "test@example.com")
+
+            tracked_file = repo / "tracked.txt"
+            for index in range(55):
+                tracked_file.write_text(str(index), encoding="utf-8")
+                self._run_git(repo, "add", "tracked.txt")
+                self._run_git(repo, "commit", "-q", "-m", f"commit {index}")
+
+            commits = GitSymphony(repo_path=str(repo)).get_git_commits()
+
+            self.assertEqual(55, len(commits))
+            self.assertEqual("commit 0", commits[0]["message"])
+            self.assertEqual("commit 54", commits[-1]["message"])
+
     def test_release_workflow_publishes_the_player_to_pages(self):
         workflow = (PROJECT_ROOT / ".github" / "workflows" / "build.yml").read_text(
             encoding="utf-8"
@@ -110,6 +130,8 @@ class GitSymphonyTests(unittest.TestCase):
         self.assertIn("actions/upload-pages-artifact@", workflow)
         self.assertIn("actions/deploy-pages@", workflow)
         self.assertIn("requirements-git-symphony.txt", workflow)
+        publish_job = workflow.split("  publish-symphony:", maxsplit=1)[1]
+        self.assertIn("fetch-depth: 0", publish_job)
 
     @staticmethod
     def _run_git(repo, *args, env=None):

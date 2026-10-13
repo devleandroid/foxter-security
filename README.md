@@ -14,11 +14,11 @@ A interface é projetada para ser intuitiva, com botões estilizados e feedback 
 
 ## Git Symphony
 
-O histórico do Git também pode virar música: cada commit gera um acorde e uma cifra para o piano. Ao publicar uma nova versão (`v*`), o workflow gera a partitura em SVG, um MIDI para download e uma página interativa com botão **Play**. A música só toca quando alguém clica em Play — navegadores não permitem reprodução automática sem interação.
+O histórico completo do Git, desde o início do projeto, também pode virar música: cada commit gera um acorde e uma cifra para o piano. Ao publicar uma nova versão (`v*`), o workflow gera a partitura em SVG, um MIDI para download e uma página interativa com botão **Play**. A música só toca quando alguém clica em Play — navegadores não permitem reprodução automática sem interação.
 
 <a href="https://devleandroid.github.io/foxter-security/"><img src="https://devleandroid.github.io/foxter-security/symphony.svg" alt="Partitura em piano gerada pelos commits do Foxter Security; clique para abrir o player"></a>
 
-Para publicar o player, habilite **Settings → Pages → Build and deployment → Source: GitHub Actions** uma vez. Depois disso, cada release atualiza automaticamente a página. Para gerar os arquivos localmente, instale a dependência (`python -m pip install -r requirements-git-symphony.txt`) e execute:
+Para publicar o player, habilite **Settings → Pages → Build and deployment → Source: GitHub Actions** uma vez. Se o ambiente `github-pages` tiver regras de implantação, permita tags que correspondam a `v*` em **Settings → Environments → github-pages → Deployment branches and tags**. Depois disso, cada release atualiza automaticamente a página. Para gerar os arquivos localmente, instale a dependência (`python -m pip install -r requirements-git-symphony.txt`) e execute:
 
 ```sh
 python git_symphony.py . --midi git_symphony.mid --html docs/index.html --svg docs/symphony.svg

@@ -1,10 +1,10 @@
-Versão desta melhoria: **1.0.7**.
+Versão desta melhoria: **1.0.8**.
 
-Esta versão adiciona a **Git Symphony**, que transforma o histórico do repositório em uma composição musical. Cada commit vira um acorde baseado em seu hash e mensagem; a partitura mostra as cifras e o piano, e o player permite ouvir a música com **Play** ou baixar o MIDI.
+Esta versão atualiza a **Git Symphony** para incluir todos os commits disponíveis no histórico do repositório, desde o início do projeto. Cada commit vira um acorde baseado em seu hash e mensagem; o player mostra a sequência completa e permite ouvir a composição com **Play** ou baixar o MIDI.
 
-Ao publicar uma tag de release `v*`, o GitHub Actions gera a página interativa e a publica no GitHub Pages. A partitura clicável também aparece no README. A reprodução começa somente após a interação do usuário; nenhum áudio toca automaticamente. O gerador inclui até 50 commits recentes do histórico, em ordem cronológica.
+Ao publicar uma tag de release `v*`, o GitHub Actions busca o histórico completo, gera a página interativa e a publica no GitHub Pages. A partitura clicável também aparece no README. A reprodução começa somente após a interação do usuário; nenhum áudio toca automaticamente.
 
-Esta versão também inclui correções na sintaxe YAML do workflow, testes para a geração do MIDI, da partitura e do player, e a dependência da Git Symphony separada das dependências do aplicativo desktop. Ela inclui ainda a compilação e o empacotamento de saída do Nuitka no Windows, Linux e macOS, com o download automático do Dependency Walker em runners não interativos do Windows. Cada build usa a versão do arquivo `VERSION`.
+Esta versão também corrige a saída do gerador em consoles Windows e inclui testes para históricos com mais de 50 commits, a geração do MIDI, da partitura e do player. A dependência da Git Symphony permanece separada das dependências do aplicativo desktop. Cada build usa a versão do arquivo `VERSION`.
 
 ## O que é o Foxter Security
 
