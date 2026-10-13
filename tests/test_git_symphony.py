@@ -3,10 +3,13 @@ import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from git_symphony import GitSymphony
+from scripts.git_symphony_action import main as run_github_action
 from scripts.git_symphony_site import write_site
 
 
@@ -120,6 +123,42 @@ class GitSymphonyTests(unittest.TestCase):
             self.assertEqual("commit 0", commits[0]["message"])
             self.assertEqual("commit 54", commits[-1]["message"])
 
+    def test_github_action_generates_files_in_the_checked_out_repository(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir) / "repo"
+            repo.mkdir()
+            self._run_git(repo, "init", "-q")
+            self._run_git(repo, "config", "user.name", "Test Author")
+            self._run_git(repo, "config", "user.email", "test@example.com")
+            (repo / "tracked.txt").write_text("project", encoding="utf-8")
+            self._run_git(repo, "add", "tracked.txt")
+            self._run_git(repo, "commit", "-q", "-m", "initial commit")
+
+            with patch.dict(
+                os.environ,
+                {
+                    "GITHUB_WORKSPACE": str(repo),
+                    "GITHUB_SERVER_URL": "https://github.com",
+                    "GITHUB_REPOSITORY": "example/project",
+                },
+            ), redirect_stdout(_WindowsConsoleStream()):
+                result = run_github_action(["--output-directory", "generated"])
+
+            output = repo / "generated"
+            self.assertEqual(0, result)
+            self.assertTrue((output / "index.html").is_file())
+            self.assertTrue((output / "symphony.svg").is_file())
+            self.assertTrue((output / "git_symphony.mid").read_bytes().startswith(b"MThd"))
+            html = (output / "index.html").read_text(encoding="utf-8")
+            self.assertIn("https://github.com/example/project", html)
+
+    def test_github_action_rejects_output_outside_the_checked_out_repository(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, {"GITHUB_WORKSPACE": temp_dir}), redirect_stderr(
+                StringIO()
+            ), self.assertRaises(SystemExit):
+                run_github_action(["--output-directory", "../outside"])
+
     def test_release_workflow_publishes_the_player_to_pages(self):
         workflow = (PROJECT_ROOT / ".github" / "workflows" / "build.yml").read_text(
             encoding="utf-8"
@@ -129,9 +168,25 @@ class GitSymphonyTests(unittest.TestCase):
         self.assertIn("if: startsWith(github.ref, 'refs/tags/v')", workflow)
         self.assertIn("actions/upload-pages-artifact@", workflow)
         self.assertIn("actions/deploy-pages@", workflow)
-        self.assertIn("requirements-git-symphony.txt", workflow)
         publish_job = workflow.split("  publish-symphony:", maxsplit=1)[1]
         self.assertIn("fetch-depth: 0", publish_job)
+        self.assertIn("uses: ./", publish_job)
+        self.assertIn("output-directory: site", publish_job)
+
+    def test_github_action_example_matches_the_release_version(self):
+        action = (PROJECT_ROOT / "action.yml").read_text(encoding="utf-8")
+        example = (
+            PROJECT_ROOT / "examples" / "git-symphony-workflow.yml"
+        ).read_text(encoding="utf-8")
+        version = (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+
+        self.assertIn("using: composite", action)
+        self.assertIn("scripts/git_symphony_action.py", action)
+        self.assertIn(f"devleandroid/foxter-security@v{version}", example)
+        self.assertIn("fetch-depth: 0", example)
+        self.assertIn("pages: write", example)
+        self.assertIn("id-token: write", example)
+        self.assertIn("actions/deploy-pages@", example)
 
     @staticmethod
     def _run_git(repo, *args, env=None):

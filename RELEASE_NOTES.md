@@ -1,10 +1,10 @@
-Versão desta melhoria: **1.0.8**.
+Versão desta melhoria: **1.0.9**.
 
-Esta versão atualiza a **Git Symphony** para incluir todos os commits disponíveis no histórico do repositório, desde o início do projeto. Cada commit vira um acorde baseado em seu hash e mensagem; o player mostra a sequência completa e permite ouvir a composição com **Play** ou baixar o MIDI.
+Esta versão disponibiliza a **Git Symphony como uma GitHub Action**, que pode ser adicionada a qualquer repositório para gerar o player com o histórico completo de commits. O workflow de exemplo publica automaticamente a partitura em SVG, o MIDI e a página interativa no GitHub Pages.
 
-Ao publicar uma tag de release `v*`, o GitHub Actions busca o histórico completo, gera a página interativa e a publica no GitHub Pages. A partitura clicável também aparece no README. A reprodução começa somente após a interação do usuário; nenhum áudio toca automaticamente.
+Cada commit vira um acorde baseado em seu hash e mensagem; a reprodução começa somente após a interação do usuário. A Action aceita a pasta de saída configurável e cria links para os commits do repositório em que roda.
 
-Esta versão também corrige a saída do gerador em consoles Windows e inclui testes para históricos com mais de 50 commits, a geração do MIDI, da partitura e do player. A dependência da Git Symphony permanece separada das dependências do aplicativo desktop. Cada build usa a versão do arquivo `VERSION`.
+Esta versão também inclui testes para históricos com mais de 50 commits, a geração do MIDI, da partitura e do player, além da correção de saída em consoles Windows. A dependência da Git Symphony permanece separada das dependências do aplicativo desktop. Cada build usa a versão do arquivo `VERSION`.
 
 ## O que é o Foxter Security
 

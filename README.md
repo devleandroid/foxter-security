@@ -14,11 +14,19 @@ A interface é projetada para ser intuitiva, com botões estilizados e feedback 
 
 ## Git Symphony
 
-O histórico completo do Git, desde o início do projeto, também pode virar música: cada commit gera um acorde e uma cifra para o piano. Ao publicar uma nova versão (`v*`), o workflow gera a partitura em SVG, um MIDI para download e uma página interativa com botão **Play**. A música só toca quando alguém clica em Play — navegadores não permitem reprodução automática sem interação.
+O histórico completo do Git, desde o início do projeto, também pode virar música: cada commit gera um acorde e uma cifra para o piano. A **Git Symphony está disponível como GitHub Action** para adicionar a qualquer repositório público: ela gera a partitura em SVG, um MIDI para download e uma página interativa com botão **Play**. A música só toca quando alguém clica em Play — navegadores não permitem reprodução automática sem interação.
 
 <a href="https://devleandroid.github.io/foxter-security/"><img src="https://devleandroid.github.io/foxter-security/symphony.svg" alt="Partitura em piano gerada pelos commits do Foxter Security; clique para abrir o player"></a>
 
-Para publicar o player, habilite **Settings → Pages → Build and deployment → Source: GitHub Actions** uma vez. Se o ambiente `github-pages` tiver regras de implantação, permita tags que correspondam a `v*` em **Settings → Environments → github-pages → Deployment branches and tags**. Depois disso, cada release atualiza automaticamente a página. Para gerar os arquivos localmente, instale a dependência (`python -m pip install -r requirements-git-symphony.txt`) e execute:
+Para adicionar a Git Symphony a outro projeto:
+
+1. Copie [`examples/git-symphony-workflow.yml`](examples/git-symphony-workflow.yml) para `.github/workflows/git-symphony.yml` no seu repositório. Troque `main` por `master` se esse for o nome da branch principal.
+2. Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions** como fonte.
+3. Faça push na branch principal. O workflow busca o histórico completo, gera a página e publica no endereço GitHub Pages do projeto. O workflow precisa das permissões `pages: write` e `id-token: write`; se o ambiente `github-pages` tiver regras de implantação, permita a branch principal.
+
+A Action pode ser usada diretamente como `devleandroid/foxter-security@v1.0.9`; ela gera `index.html`, `symphony.svg` e `git_symphony.mid` na pasta `site` por padrão. Para escolher outra pasta, defina `output-directory` no passo da Action e ajuste o `path` do upload do Pages. Para gerar os arquivos localmente, instale a dependência (`python -m pip install -r requirements-git-symphony.txt`) e execute:
+
+O player inclui hashes, nomes de autores e mensagens de todos os commits que o Git consegue alcançar. Revise o histórico antes de publicar e não exponha informações privadas em um site público.
 
 ```sh
 python git_symphony.py . --midi git_symphony.mid --html docs/index.html --svg docs/symphony.svg
