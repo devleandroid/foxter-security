@@ -1,2 +1,2 @@
-Nuitka>=4.2.2,<5
+Nuitka>=4.3,<5
 zstandard>=0.23,<1
